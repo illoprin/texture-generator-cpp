@@ -11,7 +11,7 @@ struct Pixel {
 };
 
 // Parameter is inactive
-static std::vector<Pixel> get_pixels(uint width, uint height)
+static std::vector<Pixel> box_texture(uint width, uint height, uint margin)
 {
 	std::vector<Pixel> pixels(width * height);
 
@@ -21,11 +21,27 @@ static std::vector<Pixel> get_pixels(uint width, uint height)
 		uint y = static_cast<int>( index / height );
 		float grayscale = static_cast<float>(width - x) / static_cast<float>(width);
 
-		// Generate gradient
-        pixels[index].r = static_cast<uint>(grayscale * 255);
-        pixels[index].g = static_cast<uint>(grayscale * 255);
-        pixels[index].b = static_cast<uint>(grayscale * 255);
-        pixels[index].a = static_cast<uint>(255);
+		// Box texture
+		uint r, g, b, a;
+
+		// Get pixel color
+		
+		// Border
+		if (x < margin || x > width - margin || y < margin || y > height - margin)
+		{
+			r = g = b = 120 + random_uniform_unsigned(0, 30) * static_cast<uint>(ceil(random_real()));
+		}
+		// Noise insides
+		else
+		{
+			r = g = b = 200 + random_uniform_unsigned(0, 54);
+		}
+		a = 255;
+
+        pixels[index].r = r;
+        pixels[index].g = g;
+        pixels[index].b = b;
+        pixels[index].a = a;
 	}
 
 	return pixels;
@@ -41,7 +57,13 @@ static int gen_image (uint width, uint height, std::string target_dir)
 {
 	std::string target_file(target_dir + "/" + uuid::gen_v4() + ".png");
 
-	std::vector<Pixel> pixels = get_pixels(width, height);
+	std::vector<Pixel> pixels = box_texture(width, height, 16);
+
+	// Check existing 'tmp' directory
+	if (!fs::is_directory("tmp") || !fs::exists("tmp"))
+	{
+		fs::create_directory("tmp");
+	}
 
 	// Этот код блять сплошная обработка ошибок, плюсом этому...
 	// ... libpng - прекрасен, но блять, можете называть функции и переменные...
@@ -132,7 +154,7 @@ static int gen_image (uint width, uint height, std::string target_dir)
 	pixels.clear();
 
 	std::cout <<  "File: " << target_file << "\n";
-	
+
 	// Exit code 0 - success
 	return 0;
 }
