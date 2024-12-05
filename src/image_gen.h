@@ -1,40 +1,85 @@
 #pragma once
 
 #define lp_random
+#define lp_math
 #include <lp_helper.h>
+
 #include <png.h>
 #include <vector>
 #include <cstdio>
 
-struct Pixel {
-    uint r, g, b, a;
+enum TextureType
+{
+	Box = 0,
+	Gradient = 1,
+	Grass = 2,
 };
 
-// Parameter is inactive
-static std::vector<Pixel> box_texture(uint width, uint height, uint margin)
+struct Pixel {
+	// One byte unsigned int
+    u_int8_t r, g, b, a;
+
+	// Default constructor
+	Pixel() : r(0), g(0), b(0), a(255) {}
+
+	Pixel(u_int8_t val): r(val), g(val), b(val), a(255) {}
+
+	Pixel(u_int8_t red, u_int8_t green, u_int8_t blue, u_int8_t alpha):
+		r(red), g(green), b(blue), a(alpha) {}
+
+	// RGBA float 0.f - 1.f
+	Pixel(float red, float green, float blue, float alpha):
+		r( static_cast <u_int8_t> (red * 255) ),
+		g( static_cast <u_int8_t> (green * 255) ),
+		b( static_cast <u_int8_t> (blue * 255) ),
+		a( static_cast <u_int8_t> (alpha * 255) ) {}
+};
+
+static std::vector<uint> gen_noise(uint width, uint height)
+{
+	std::vector<uint> noise(width * height);
+
+	for (uint index = 0; index < (width * height); index++)
+	{
+		noise[index] = random_byte();
+	}
+
+	return noise;
+}
+
+static std::vector<Pixel> box_texture(uint width, uint height, uint margin, uint mar_tex_scl = 1, uint insides_tex_scl = 1)
 {
 	std::vector<Pixel> pixels(width * height);
 
+	std::vector<uint> noise_1 = gen_noise((int) width / mar_tex_scl, (int) height / mar_tex_scl);
+	std::vector<uint> noise_2 = gen_noise((int) width / insides_tex_scl, (int) height / insides_tex_scl);
+	std::cout << "Starting gen...\n";
 	for (uint index = 0; index < (width * height); index++)
 	{
 		uint x = index % width;
 		uint y = static_cast<int>( index / height );
 		float grayscale = static_cast<float>(width - x) / static_cast<float>(width);
 
-		// Box texture
-		uint r, g, b, a;
+		u_int8_t r, g, b, a;
 
 		// Get pixel color
-		
+		uint n_pix_i;
+		float noise_val;
+
 		// Border
 		if (x < margin || x > width - margin || y < margin || y > height - margin)
 		{
-			r = g = b = 120 + random_uniform_unsigned(0, 30) * static_cast<uint>(ceil(random_real()));
+			n_pix_i = (unsigned int) ((x / mar_tex_scl) * (y / mar_tex_scl));
+			noise_val = ((float) (noise_1[n_pix_i]) / 255);
+
+			r = g = b = clamp(180U + (unsigned int) (noise_val*20), 180U, 200U);
 		}
-		// Noise insides
+		// Color insides
 		else
 		{
-			r = g = b = 200 + random_uniform_unsigned(0, 54);
+			n_pix_i = (unsigned int) ((x / insides_tex_scl) * (y / insides_tex_scl));
+			noise_val = ((float) (noise_2[n_pix_i]) / 255);
+			r = g = b = clamp(215U + (unsigned int) (noise_val*25), 200U, 240U);
 		}
 		a = 255;
 
@@ -57,7 +102,7 @@ static int gen_image (uint width, uint height, std::string target_dir)
 {
 	std::string target_file(target_dir + "/" + uuid::gen_v4() + ".png");
 
-	std::vector<Pixel> pixels = box_texture(width, height, 16);
+	std::vector<Pixel> pixels = box_texture(width, height, 16U, 8U, 16U);
 
 	// Check existing 'tmp' directory
 	if (!fs::is_directory("tmp") || !fs::exists("tmp"))

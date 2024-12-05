@@ -1,7 +1,6 @@
 
 #ifdef lp_random
 
-
 // Set seed for random
 void set_seed(uint seed)
 {
@@ -12,6 +11,11 @@ void set_seed(uint seed)
 uint random_uniform_unsigned(uint start, uint end)
 {
 	return rand() % (end - start + 1) + start;
+}
+
+u_int8_t random_byte()
+{
+    return static_cast<u_int8_t>(random_uniform_unsigned(0, 255));
 }
 
 // Random float value from 'start' to 'end'
@@ -68,19 +72,21 @@ namespace uuid
 
 #endif
 
-#ifdef lp_functions
-// Creates beautiful (not) string from int array
-std::string arr_to_str(int* arr, int len) {
-	std::string s = "{ ";
-	for (int* ptr = arr; ptr < arr + len; ptr++) {
-		s += std::to_string(*ptr) + ", ";
-	}
-	// Delete extra ", " symbols
-	if (!s.empty()) {
-		s.pop_back();
-		s.pop_back();
-	}
-	s += " }";
-	return s;
+
+#ifdef lp_math
+// Clamps value from min to max
+#include <type_traits>
+
+template<typename T>
+static T clamp(const T value, const T min, const T max)
+{
+    static_assert
+    (
+        std::is_arithmetic_v<T>,
+        "lp_math.clamp function: type T must be a number"
+    );
+
+    return std::min(std::max(value, min), max);
 }
+
 #endif
