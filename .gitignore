@@ -3,3 +3,4 @@ bin
 libs
 tmp
 CMakeLists.txt
+release
