@@ -2,21 +2,25 @@
 
 #define lp_random
 #define lp_math
-#include <lp_helper.h>
+// -- My own lib on C++ --
+#include <lp_helper.h> // Some helper functions (random, uuid, math)
 
-#include <png.h>
+
+#include <png.h> // libpng structures
 #include <vector>
 #include <cstdio>
 
 enum TextureType
 {
-	Box = 0,
-	Gradient = 1,
+	NoTexture = 0,
+	Box = 1,
 	Grass = 2,
+	MetalWall = 3,
+	OfficeWall = 4
 };
 
 struct Pixel {
-	// One byte unsigned int
+	// One byte unsigned int per pixel
     u_int8_t r, g, b, a;
 
 	// Default constructor
@@ -27,7 +31,7 @@ struct Pixel {
 	Pixel(u_int8_t red, u_int8_t green, u_int8_t blue, u_int8_t alpha):
 		r(red), g(green), b(blue), a(alpha) {}
 
-	// RGBA float 0.f - 1.f
+	// Constructor for RGBA float 0.f - 1.f
 	Pixel(float red, float green, float blue, float alpha):
 		r( static_cast <u_int8_t> (red * 255) ),
 		g( static_cast <u_int8_t> (green * 255) ),
@@ -53,41 +57,92 @@ static std::vector<Pixel> box_texture(uint width, uint height, uint margin, uint
 
 	std::vector<uint> noise_1 = gen_noise((int) width / mar_tex_scl, (int) height / mar_tex_scl);
 	std::vector<uint> noise_2 = gen_noise((int) width / insides_tex_scl, (int) height / insides_tex_scl);
-	std::cout << "Starting gen...\n";
+
+	// Pixel x, y
+	uint x, y;
+	// Pixel x, y in noise space
+	uint n_x, n_y;
+	// Pixel color 0-255
+	u_int8_t r, g, b, a;
+	// Pixel index in grain texture
+	uint n_pix_i;
+	// Coefficient of existence of noise
+	float noise_ratio;
 	for (uint index = 0; index < (width * height); index++)
 	{
-		uint x = index % width;
-		uint y = static_cast<int>( index / height );
-		float grayscale = static_cast<float>(width - x) / static_cast<float>(width);
-
-		u_int8_t r, g, b, a;
-
-		// Get pixel color
-		uint n_pix_i;
-		float noise_val;
-
+		x = index % width;
+		y = (uint) (index / height);
+		
 		// Border
 		if (x < margin || x > width - margin || y < margin || y > height - margin)
 		{
-			n_pix_i = (unsigned int) ((x / mar_tex_scl) * (y / mar_tex_scl));
-			noise_val = ((float) (noise_1[n_pix_i]) / 255);
+			n_x = (uint)(x / mar_tex_scl); n_x = n_x < 1U ? 1U : n_x;
+			n_y = (uint)(y / mar_tex_scl); n_y = n_y < 1U ? 1U : n_y;
+			n_pix_i = n_x * n_y;
+			noise_ratio = (float)noise_1[n_pix_i] / 255.f;
 
-			r = g = b = clamp(180U + (unsigned int) (noise_val*20), 180U, 200U);
+			r = g = b = my_math::clamp(180U + (unsigned int) (noise_ratio*20), 180U, 200U);
 		}
 		// Color insides
 		else
 		{
-			n_pix_i = (unsigned int) ((x / insides_tex_scl) * (y / insides_tex_scl));
-			noise_val = ((float) (noise_2[n_pix_i]) / 255);
-			r = g = b = clamp(215U + (unsigned int) (noise_val*25), 200U, 240U);
+			
+			n_x = (uint)(x / insides_tex_scl); n_x = n_x < 1U ? 1U : n_x;
+			n_y = (uint)(y / insides_tex_scl); n_y = n_y < 1U ? 1U : n_y;
+			n_pix_i = n_x * n_y;
+			noise_ratio = (float)noise_2[n_pix_i] / 255.f;
+			r = g = b = my_math::clamp(215U + (unsigned int) (noise_ratio*25), 200U, 240U);
 		}
-		a = 255;
+		a = 255; // Pixel alpha value
 
         pixels[index].r = r;
         pixels[index].g = g;
         pixels[index].b = b;
         pixels[index].a = a;
 	}
+	noise_1.clear();
+	noise_2.clear();
+
+	return pixels;
+}
+
+static std::vector<Pixel> grass_texture(uint width, uint height, uint grain_scl = 4U)
+{
+	std::vector<Pixel> pixels(width * height);
+
+	std::vector<uint> grain = gen_noise((uint) width / grain_scl , (uint) height / grain_scl);
+
+	// Pixel x, y
+	uint x, y;
+	// Pixel x, y in noise space
+	uint n_x, n_y;
+	// Pixel color 0-255
+	u_int8_t r, g, b, a;
+	// Pixel index in grain texture
+	uint n_pix_i;
+	// Existence coefficient of noise
+	float noise_ratio;
+	for (uint index = 0; index < width * height; index++)
+	{
+		x = index % height;
+		y = (uint) (index / width);
+		n_x = (uint)(x / grain_scl); n_x = n_x < 1u ? 1u : n_x;
+		n_y = (uint)(y / grain_scl); n_y = n_y < 1u ? 1u : n_y;
+
+		// Get pixel color
+		n_pix_i = n_x * n_y;
+		noise_ratio = (float)grain[n_pix_i] / 255.f;
+		r = my_math::clamp(79U + (uint)(noise_ratio * 60), 79U, 230U);
+		g = my_math::clamp(135U + (uint)(noise_ratio * 85), 130U, 230U);
+		b = my_math::clamp(20U + (uint)(noise_ratio * 50), 19U, 230U);
+		a = 255;
+
+		pixels[index].r = r;
+		pixels[index].g = g;
+		pixels[index].b = b;
+		pixels[index].a = a;
+	}
+	grain.clear();
 
 	return pixels;
 }
@@ -95,18 +150,41 @@ static std::vector<Pixel> box_texture(uint width, uint height, uint margin, uint
 /*
  * Width - width of image
  * Height - height of image
- * Format - may be "RGB" or "RGBA" (with alpha channel)
  * Target Dir - directory to write image file 
 */
-static int gen_image (uint width, uint height, std::string target_dir)
+static int gen_image (uint width, uint height, std::string target_dir, TextureType type)
 {
-	std::string target_file(target_dir + "/" + uuid::gen_v4() + ".png");
+	std::vector<Pixel> pixels;
+	std::string file_name;
 
-	std::vector<Pixel> pixels = box_texture(width, height, 16U, 8U, 16U);
+	switch (type) {
+		case TextureType::Box:
+			pixels = box_texture(width, height, 16U, 8U, 16U);
+			file_name = "box" + std::to_string(random_uniform_unsigned(1001, 9999));
+		break;
+
+		case TextureType::Grass:
+			pixels = grass_texture(width, height, 8U);
+			file_name = "grass" + std::to_string(random_uniform_unsigned(1001, 9999));
+		break;
+
+		case TextureType::NoTexture:
+			std::cout << "\nPlease, write currect texture type\n";
+			return 1;
+		break;
+
+		default:
+			pixels = box_texture(width, height, 16U, 8U, 16U);
+			file_name = "box" + std::to_string(random_uniform_unsigned(1001, 9999));
+		break;
+	}
+
+	std::string target_file(target_dir + "/" + file_name + ".png");
 
 	// Check existing 'tmp' directory
 	if (!fs::is_directory("tmp") || !fs::exists("tmp"))
 	{
+		// If not existing -> create directory
 		fs::create_directory("tmp");
 	}
 
@@ -115,7 +193,7 @@ static int gen_image (uint width, uint height, std::string target_dir)
 	// ... вкладывая в них хоть какой-то блять смысл
 	// ЗАЕБЛО!!!!
 
-	// Open file for writing
+	// Open file for writing by C FILE data structure
 	FILE* file = fopen(target_file.data(), "wb");
 	if (!file)
 	{
@@ -123,7 +201,7 @@ static int gen_image (uint width, uint height, std::string target_dir)
 		return 1;
 	}
 
-	// Create png structure of libpng
+	// Create pointer to png structure of libpng
 	png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 	if (!png_ptr)
 	{
@@ -133,7 +211,7 @@ static int gen_image (uint width, uint height, std::string target_dir)
 		return 1;
 	}
 
-	// Create info section of png
+	// Create pointer to info section structure of libpng
 	png_infop info_ptr = png_create_info_struct(png_ptr);
 	if (!info_ptr)
 	{
@@ -144,6 +222,9 @@ static int gen_image (uint width, uint height, std::string target_dir)
 		return 1;
 	}
 
+	// Jmp - weird error checking method in libpng
+	// I dont know what fuck is this. It was just in docs
+	// It checks if a context has been created to write image data
 	if (setjmp(png_jmpbuf(png_ptr)))
 	{
 		png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
@@ -153,6 +234,7 @@ static int gen_image (uint width, uint height, std::string target_dir)
 		return 1;
 	}
 
+	// Create io stream for libpng
 	png_init_io(png_ptr, file);
 
 	// Set PNG parametres
@@ -172,7 +254,7 @@ static int gen_image (uint width, uint height, std::string target_dir)
 	// Writing header to png
 	png_write_info(png_ptr, info_ptr);
 
-	// Write pixel data
+	// Write pixels data
 	png_byte row[sizeof(png_byte)*width*4];
 	for (uint line = 0; line < height; line++)
 	{
@@ -181,6 +263,7 @@ static int gen_image (uint width, uint height, std::string target_dir)
 		{
 			uint index = x_line + line * height;
 			Pixel* pixel = &pixels[index];
+			// ...it must be unsigned char, okay
 			*(row + x_line * 4 + 0) = static_cast<unsigned char>(pixel->r); // Red
 			*(row + x_line * 4 + 1) = static_cast<unsigned char>(pixel->g); // Green
 			*(row + x_line * 4 + 2) = static_cast<unsigned char>(pixel->b); // Blue
@@ -190,10 +273,10 @@ static int gen_image (uint width, uint height, std::string target_dir)
 		png_write_row(png_ptr, row);
 	}
 
-	// End of writing
+	// Close libpng io stream
 	png_write_end(png_ptr, NULL);
 
-	// Relese resources
+	// Release resources
 	png_destroy_write_struct(&png_ptr, &info_ptr);
 	fclose(file);
 	pixels.clear();

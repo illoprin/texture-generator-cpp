@@ -1,7 +1,7 @@
 
 #ifdef lp_random
 
-// Set seed for random
+// Set seed for random. C srand() implementation
 void set_seed(uint seed)
 {
 	srand(seed);
@@ -25,10 +25,10 @@ float random_uniform_real(float start, float end)
 	return ((end - start) * range) + start;
 }
 
-// Random value from 0 to 1
+// Random float value from 0 to 1
 float random_real()
 {
-	return static_cast<float>( rand() ) / static_cast<float>(RAND_MAX);
+	return static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 }
 
 #include <random>
@@ -74,19 +74,55 @@ namespace uuid
 
 
 #ifdef lp_math
-// Clamps value from min to max
 #include <type_traits>
 
-template<typename T>
-static T clamp(const T value, const T min, const T max)
+namespace my_math
 {
-    static_assert
-    (
-        std::is_arithmetic_v<T>,
-        "lp_math.clamp function: type T must be a number"
-    );
+    // Number PI
+    static const float PI = 3.14159;
 
-    return std::min(std::max(value, min), max);
+    // Clamps value from min to max
+    template<typename T>
+    static T clamp(const T value, const T min, const T max)
+    {
+        static_assert
+        (
+            std::is_arithmetic_v<T>,
+            "lp_math.clamp function: type T must be a number"
+        );
+        return std::min(std::max(value, min), max);
+    }
+
+
+    /*
+    * Converts degrees value to radians value
+    */
+    template<typename T>
+    static float to_radians (const T deg)
+    {
+        static_assert
+        (
+            std::is_arithmetic_v<T>,
+            "lp_math.to_radians: type T must be a number"
+        );
+
+        return ((float)deg) * (PI / 180); 
+    }
+
+    /*
+    * Converts radians value to degrees value
+    */
+    template<typename T>
+    static float to_deg (const T rad)
+    {
+        static_assert
+        (
+            std::is_arithmetic_v<T>,
+            "lp_math.to_radians: type T must be a number"
+        );
+
+        return ((float)rad) * (180 / PI); 
+    }
 }
 
 #endif
