@@ -2,4 +2,4 @@
 bin
 libs
 tmp
-run.sh
+CMakeLists.txt

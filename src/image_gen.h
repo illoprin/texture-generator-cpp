@@ -1,14 +1,16 @@
 #pragma once
 
+#include <cstdint>
+
 #define lp_random
 #define lp_math
 // -- My own lib on C++ --
 #include <lp_helper.h> // Some helper functions (random, uuid, math)
 
-
-#include <png.h> // libpng structures
+#include <libpng/png.h> // libpng structures
 #include <vector>
 #include <cstdio>
+
 
 enum TextureType
 {
@@ -21,29 +23,29 @@ enum TextureType
 
 struct Pixel {
 	// One byte unsigned int per pixel
-    u_int8_t r, g, b, a;
+    uint8_t r, g, b, a;
 
 	// Default constructor
 	Pixel() : r(0), g(0), b(0), a(255) {}
 
-	Pixel(u_int8_t val): r(val), g(val), b(val), a(255) {}
+	Pixel(uint8_t val): r(val), g(val), b(val), a(255) {}
 
-	Pixel(u_int8_t red, u_int8_t green, u_int8_t blue, u_int8_t alpha):
+	Pixel(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha):
 		r(red), g(green), b(blue), a(alpha) {}
 
 	// Constructor for RGBA float 0.f - 1.f
 	Pixel(float red, float green, float blue, float alpha):
-		r( static_cast <u_int8_t> (red * 255) ),
-		g( static_cast <u_int8_t> (green * 255) ),
-		b( static_cast <u_int8_t> (blue * 255) ),
-		a( static_cast <u_int8_t> (alpha * 255) ) {}
+		r( static_cast <uint8_t> (red * 255) ),
+		g( static_cast <uint8_t> (green * 255) ),
+		b( static_cast <uint8_t> (blue * 255) ),
+		a( static_cast <uint8_t> (alpha * 255) ) {}
 };
 
-static std::vector<uint> gen_noise(uint width, uint height)
+static std::vector<unsigned int> gen_noise(unsigned int width, unsigned int height)
 {
-	std::vector<uint> noise(width * height);
+	std::vector<unsigned int> noise(width * height);
 
-	for (uint index = 0; index < (width * height); index++)
+	for (unsigned int index = 0; index < (width * height); index++)
 	{
 		noise[index] = random_byte();
 	}
@@ -51,33 +53,33 @@ static std::vector<uint> gen_noise(uint width, uint height)
 	return noise;
 }
 
-static std::vector<Pixel> box_texture(uint width, uint height, uint margin, uint mar_tex_scl = 1, uint insides_tex_scl = 1)
+static std::vector<Pixel> box_texture(unsigned int width, unsigned int height, unsigned int margin, unsigned int mar_tex_scl = 1, unsigned int insides_tex_scl = 1)
 {
 	std::vector<Pixel> pixels(width * height);
 
-	std::vector<uint> noise_1 = gen_noise((int) width / mar_tex_scl, (int) height / mar_tex_scl);
-	std::vector<uint> noise_2 = gen_noise((int) width / insides_tex_scl, (int) height / insides_tex_scl);
+	std::vector<unsigned int> noise_1 = gen_noise((int) width / mar_tex_scl, (int) height / mar_tex_scl);
+	std::vector<unsigned int> noise_2 = gen_noise((int) width / insides_tex_scl, (int) height / insides_tex_scl);
 
 	// Pixel x, y
-	uint x, y;
+	unsigned int x, y;
 	// Pixel x, y in noise space
-	uint n_x, n_y;
+	unsigned int n_x, n_y;
 	// Pixel color 0-255
-	u_int8_t r, g, b, a;
+	uint8_t r, g, b, a;
 	// Pixel index in grain texture
-	uint n_pix_i;
+	unsigned int n_pix_i;
 	// Coefficient of existence of noise
 	float noise_ratio;
-	for (uint index = 0; index < (width * height); index++)
+	for (unsigned int index = 0; index < (width * height); index++)
 	{
 		x = index % width;
-		y = (uint) (index / height);
+		y = (unsigned int) (index / height);
 		
 		// Border
 		if (x < margin || x > width - margin || y < margin || y > height - margin)
 		{
-			n_x = (uint)(x / mar_tex_scl); n_x = n_x < 1U ? 1U : n_x;
-			n_y = (uint)(y / mar_tex_scl); n_y = n_y < 1U ? 1U : n_y;
+			n_x = (unsigned int)(x / mar_tex_scl); n_x = n_x < 1U ? 1U : n_x;
+			n_y = (unsigned int)(y / mar_tex_scl); n_y = n_y < 1U ? 1U : n_y;
 			n_pix_i = n_x * n_y;
 			noise_ratio = (float)noise_1[n_pix_i] / 255.f;
 
@@ -87,8 +89,8 @@ static std::vector<Pixel> box_texture(uint width, uint height, uint margin, uint
 		else
 		{
 			
-			n_x = (uint)(x / insides_tex_scl); n_x = n_x < 1U ? 1U : n_x;
-			n_y = (uint)(y / insides_tex_scl); n_y = n_y < 1U ? 1U : n_y;
+			n_x = (unsigned int)(x / insides_tex_scl); n_x = n_x < 1U ? 1U : n_x;
+			n_y = (unsigned int)(y / insides_tex_scl); n_y = n_y < 1U ? 1U : n_y;
 			n_pix_i = n_x * n_y;
 			noise_ratio = (float)noise_2[n_pix_i] / 255.f;
 			r = g = b = my_math::clamp(215U + (unsigned int) (noise_ratio*25), 200U, 240U);
@@ -106,35 +108,35 @@ static std::vector<Pixel> box_texture(uint width, uint height, uint margin, uint
 	return pixels;
 }
 
-static std::vector<Pixel> grass_texture(uint width, uint height, uint grain_scl = 4U)
+static std::vector<Pixel> grass_texture(unsigned int width, unsigned int height, unsigned int grain_scl = 4U)
 {
 	std::vector<Pixel> pixels(width * height);
 
-	std::vector<uint> grain = gen_noise((uint) width / grain_scl , (uint) height / grain_scl);
+	std::vector<unsigned int> grain = gen_noise((unsigned int) width / grain_scl , (unsigned int) height / grain_scl);
 
 	// Pixel x, y
-	uint x, y;
+	unsigned int x, y;
 	// Pixel x, y in noise space
-	uint n_x, n_y;
+	unsigned int n_x, n_y;
 	// Pixel color 0-255
-	u_int8_t r, g, b, a;
+	uint8_t r, g, b, a;
 	// Pixel index in grain texture
-	uint n_pix_i;
+	unsigned int n_pix_i;
 	// Existence coefficient of noise
 	float noise_ratio;
-	for (uint index = 0; index < width * height; index++)
+	for (unsigned int index = 0; index < width * height; index++)
 	{
 		x = index % height;
-		y = (uint) (index / width);
-		n_x = (uint)(x / grain_scl); n_x = n_x < 1u ? 1u : n_x;
-		n_y = (uint)(y / grain_scl); n_y = n_y < 1u ? 1u : n_y;
+		y = (unsigned int) (index / width);
+		n_x = (unsigned int)(x / grain_scl); n_x = n_x < 1u ? 1u : n_x;
+		n_y = (unsigned int)(y / grain_scl); n_y = n_y < 1u ? 1u : n_y;
 
 		// Get pixel color
 		n_pix_i = n_x * n_y;
 		noise_ratio = (float)grain[n_pix_i] / 255.f;
-		r = my_math::clamp(79U + (uint)(noise_ratio * 60), 79U, 230U);
-		g = my_math::clamp(135U + (uint)(noise_ratio * 85), 130U, 230U);
-		b = my_math::clamp(20U + (uint)(noise_ratio * 50), 19U, 230U);
+		r = my_math::clamp(79U + (unsigned int)(noise_ratio * 60), 79U, 230U);
+		g = my_math::clamp(135U + (unsigned int)(noise_ratio * 85), 130U, 230U);
+		b = my_math::clamp(20U + (unsigned int)(noise_ratio * 50), 19U, 230U);
 		a = 255;
 
 		pixels[index].r = r;
@@ -152,7 +154,7 @@ static std::vector<Pixel> grass_texture(uint width, uint height, uint grain_scl 
  * Height - height of image
  * Target Dir - directory to write image file 
 */
-static int gen_image (uint width, uint height, std::string target_dir, TextureType type)
+static int gen_image (unsigned int width, unsigned int height, std::string target_dir, TextureType type)
 {
 	std::vector<Pixel> pixels;
 	std::string file_name;
@@ -256,12 +258,12 @@ static int gen_image (uint width, uint height, std::string target_dir, TextureTy
 
 	// Write pixels data
 	png_byte row[sizeof(png_byte)*width*4];
-	for (uint line = 0; line < height; line++)
+	for (unsigned int line = 0; line < height; line++)
 	{
 		// Writing data line by line
-		for (uint x_line = 0; x_line < width; x_line++)
+		for (unsigned int x_line = 0; x_line < width; x_line++)
 		{
-			uint index = x_line + line * height;
+			unsigned int index = x_line + line * height;
 			Pixel* pixel = &pixels[index];
 			// ...it must be unsigned char, okay
 			*(row + x_line * 4 + 0) = static_cast<unsigned char>(pixel->r); // Red
