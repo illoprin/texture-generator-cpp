@@ -11,7 +11,6 @@
 #include <vector>
 #include <cstdio>
 
-
 enum TextureType
 {
 	NoTexture = 0,
@@ -88,7 +87,6 @@ static std::vector<Pixel> box_texture(unsigned int width, unsigned int height, u
 		// Color insides
 		else
 		{
-			
 			n_x = (unsigned int)(x / insides_tex_scl); n_x = n_x < 1U ? 1U : n_x;
 			n_y = (unsigned int)(y / insides_tex_scl); n_y = n_y < 1U ? 1U : n_y;
 			n_pix_i = n_x * n_y;
@@ -270,7 +268,6 @@ static int gen_image (unsigned int width, unsigned int height, std::string targe
 			*(row + x_line * 4 + 1) = static_cast<unsigned char>(pixel->g); // Green
 			*(row + x_line * 4 + 2) = static_cast<unsigned char>(pixel->b); // Blue
 			*(row + x_line * 4 + 3) = static_cast<unsigned char>(pixel->a); // Alpha
-			
 		}
 		png_write_row(png_ptr, row);
 	}

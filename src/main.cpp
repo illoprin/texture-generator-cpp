@@ -1,4 +1,3 @@
-
 #include "includes.h"
 #include "const.h"
 
@@ -16,7 +15,8 @@ TextureType get_type_from_str(std::string& str)
 		return TextureType::NoTexture;
 }
 
-int main() {
+int main()
+{
 	cout << HI_MSG;
 
 	bool started = true;
@@ -25,7 +25,7 @@ int main() {
 	while (started)
 	{
 		cout << DIVIDER; cin >> user_input;
-		if (user_input == "exit")
+		if (user_input == "exit") 
 		{
 			started = false;
 		}
